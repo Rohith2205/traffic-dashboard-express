@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Dashboard - Real-Time Monitoring</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Leaflet CSS for Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+</head>
+<body>
+    <!-- Top Navigation -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <i class="fas fa-traffic-light"></i>
+            <span>Traffic Dashboard</span>
+        </div>
+        <div class="nav-controls">
+            <button id="refreshBtn" class="nav-btn" title="Refresh Data">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+            <button id="settingsBtn" class="nav-btn" title="Settings">
+                <i class="fas fa-cog"></i>
+            </button>
+            <a href="/" class="nav-btn" title="Home">
+                <i class="fas fa-home"></i>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <!-- Location Search -->
+            <div class="search-section">
+                <h3><i class="fas fa-search-location"></i> Search Location</h3>
+                <div class="search-box">
+                    <input type="text" id="locationSearch" placeholder="Enter address or coordinates...">
+                    <button id="searchBtn"><i class="fas fa-search"></i></button>
+                </div>
+                <button id="currentLocationBtn" class="btn-location">
+                    <i class="fas fa-crosshairs"></i> Use My Location
+                </button>
+            </div>
+
+            <!-- Traffic Stats -->
+            <div class="stats-section">
+                <h3><i class="fas fa-chart-bar"></i> Traffic Stats</h3>
+                <div class="stat-item">
+                    <div class="stat-icon" style="background: #4CAF50;">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Current Speed</span>
+                        <span class="stat-value" id="currentSpeed">--</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon" style="background: #2196F3;">
+                        <i class="fas fa-road"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Normal Speed</span>
+                        <span class="stat-value" id="normalSpeed">--</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon" id="congestionIcon" style="background: #9E9E9E;">
+                        <i class="fas fa-traffic-light"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Congestion</span>
+                        <span class="stat-value" id="congestionLevel">Unknown</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-icon" style="background: #FF9800;">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Travel Time</span>
+                        <span class="stat-value" id="travelTime">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Traffic Incidents -->
+            <div class="incidents-section">
+                <h3><i class="fas fa-exclamation-triangle"></i> Traffic Incidents</h3>
+                <div id="incidentsList" class="incidents-list">
+                    <div class="no-data">
+                        <i class="fas fa-info-circle"></i>
+                        <p>No incidents in this area</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Legend -->
+            <!-- ===== ENHANCED LEGEND SECTION ===== -->
+<!-- Replace the existing legend section in dashboard.html with this -->
+
+<div class="legend-section">
+    <h3><i class="fas fa-info-circle"></i> Map Legend & Symbols</h3>
+    
+    <!-- Traffic Flow Colors -->
+    <div class="legend-category">
+        <div class="legend-category-title">🚦 Traffic Flow</div>
+        
+        <div class="legend-item">
+            <span class="legend-color" style="background: #4CAF50;"></span>
+            <div class="legend-text">
+                <span class="legend-label">Low Congestion</span>
+                <span class="legend-description">Free-flowing traffic, >80% normal speed</span>
+            </div>
+        </div>
+        
+        <div class="legend-item">
+            <span class="legend-color" style="background: #FFC107;"></span>
+            <div class="legend-text">
+                <span class="legend-label">Moderate Congestion</span>
+                <span class="legend-description">Slower traffic, 50-80% normal speed</span>
+            </div>
+        </div>
+        
+        <div class="legend-item">
+            <span class="legend-color" style="background: #FF5722;"></span>
+            <div class="legend-text">
+                <span class="legend-label">High Congestion</span>
+                <span class="legend-description">Heavy traffic, 30-50% normal speed</span>
+            </div>
+        </div>
+        
+        <div class="legend-item">
+            <span class="legend-color" style="background: #D32F2F;"></span>
+            <div class="legend-text">
+                <span class="legend-label">Severe Congestion</span>
+                <span class="legend-description">Standstill traffic, <30% normal speed</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Traffic Incidents -->
+    <div class="legend-category">
+        <div class="legend-category-title">⚠️ Traffic Incidents</div>
+        
+        <div class="legend-item">
+            <div class="legend-icon" style="background: #FF5722; color: white;">
+                <i class="fas fa-car-crash"></i>
+            </div>
+            <div class="legend-text">
+                <span class="legend-label">Accident</span>
+                <span class="legend-description">Vehicle collision or crash</span>
+            </div>
+        </div>
+        
+        <div class="legend-item">
+            <div class="legend-icon" style="background: #FF9800; color: white;">
+                <i class="fas fa-car"></i>
+            </div>
+            <div class="legend-text">
+                <span class="legend-label">Traffic Jam</span>
+                <span class="legend-description">Heavy congestion, slow moving traffic</span>
+            </div>
+        </div>
+        
+        <div class="legend-item">
+            <div class="legend-icon" style="background: #F44336; color: white;">
+                <i class="fas fa-ban"></i>
+            </div>
+            <div class="legend-text">
+                <span class="legend-label">Road Closed</span>
+                <span class="legend-description">Road completely blocked or closed</span>
+            </div>
+        </div>
+        
+        <div class="legend-item">
+            <div class="legend-icon" style="background: #9C27B0; color: white;">
+                <i class="fas fa-road"></i>
+            </div>
+            <div class="legend-text">
+                <span class="legend-label">Lane Closed</span>
+                <span class="legend-description">One or more lanes blocked</span>
+            </div>
+        </div>
+        
+        <div class="legend-item">
+            <div class="legend-icon" style="background: #FF9800; color: white;">
+                <i class="fas fa-tools"></i>
+            </div>
+            <div class="legend-text">
+                <span class="legend-label">Road Works</span>
+                <span class="legend-description">Construction or maintenance</span>
+            </div>
+        </div>
+        
+        <div class="legend-item">
+            <div class="legend-icon" style="background: #2196F3; color: white;">
+                <i class="fas fa-wrench"></i>
+            </div>
+            <div class="legend-text">
+                <span class="legend-label">Broken Down Vehicle</span>
+                <span class="legend-description">Disabled vehicle on road</span>
+            </div>
+        </div>
+        
+        <div class="legend-item">
+            <div class="legend-icon" style="background: #607D8B; color: white;">
+                <i class="fas fa-cloud"></i>
+            </div>
+            <div class="legend-text">
+                <span class="legend-label">Weather Hazard</span>
+                <span class="legend-description">Fog, rain, ice, or flooding</span>
+            </div>
+        </div>
+        
+        <div class="legend-item">
+            <div class="legend-icon" style="background: #795548; color: white;">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="legend-text">
+                <span class="legend-label">Dangerous Conditions</span>
+                <span class="legend-description">Hazardous road conditions</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Map Markers -->
+    <div class="legend-category">
+        <div class="legend-category-title">📍 Map Markers</div>
+        
+        <div class="legend-item">
+            <div class="legend-icon" style="background: #2196F3; color: white;">
+                <i class="fas fa-map-marker-alt"></i>
+            </div>
+            <div class="legend-text">
+                <span class="legend-label">Your Location</span>
+                <span class="legend-description">Currently selected point</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Additional Info -->
+    <div class="map-symbol-guide">
+        <strong style="font-size: 0.85rem;">💡 Quick Tips:</strong>
+        <ul style="margin: 0.5rem 0 0 1.2rem; font-size: 0.8rem; color: var(--text-light);">
+            <li>Click any incident marker for details</li>
+            <li>Hover over roads to see traffic speed</li>
+            <li>Use zoom controls (+/-) for better view</li>
+            <li>Data updates automatically every 30 seconds</li>
+        </ul>
+    </div>
+</div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Map Controls -->
+            <div class="map-controls">
+                <div class="control-group">
+                    <button id="toggleHeatmap" class="control-btn">
+                        <i class="fas fa-fire"></i> Heatmap
+                    </button>
+                    <button id="toggleIncidents" class="control-btn active">
+                        <i class="fas fa-exclamation-circle"></i> Incidents
+                    </button>
+                    <button id="toggleTraffic" class="control-btn active">
+                        <i class="fas fa-road"></i> Traffic Flow
+                    </button>
+                </div>
+                <div class="auto-refresh">
+                    <label>
+                        <input type="checkbox" id="autoRefresh" checked>
+                        <span>Auto-refresh (30s)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Map Container -->
+            <div id="map" class="map-container"></div>
+
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <div class="status-item">
+                    <i class="fas fa-clock"></i>
+                    <span id="lastUpdate">Last updated: --</span>
+                </div>
+                <div class="status-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span id="currentCoords">Lat: --, Lng: --</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-indicator" id="connectionStatus">
+                        <span class="status-dot"></span>
+                        Connected
+                    </span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Loading traffic data...</p>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-cog"></i> Settings</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-item">
+                    <label>Refresh Interval (seconds)</label>
+                    <input type="number" id="refreshInterval" value="30" min="10" max="300">
+                </div>
+                <div class="setting-item">
+                    <label>Map Zoom Level</label>
+                    <input type="range" id="zoomLevel" min="8" max="18" value="12">
+                    <span id="zoomValue">12</span>
+                </div>
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="soundAlerts">
+                        Enable Sound Alerts
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="saveSettings" class="btn-primary">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+    // Initialize with safe default (New York City)
+    // Initialize with safe default (New York City)
+    let DEFAULT_LAT = 40.7128;
+    let DEFAULT_LNG = -74.0060;
+    
+    // Try to get from server template
+    try {
+        <% if (default_lat && default_lng) { %>
+            DEFAULT_LAT = <%= default_lat %>;
+            DEFAULT_LNG = <%= default_lng %>;
+            console.log('✅ Using server coordinates:', DEFAULT_LAT, DEFAULT_LNG);
+        <% } else { %>
+            console.warn('⚠️ Server coordinates not provided');
+        <% } %>
+    } catch (e) {
+        console.error('❌ Error parsing coordinates:', e);
+    }
+    
+    // Validation
+    if (isNaN(DEFAULT_LAT) || isNaN(DEFAULT_LNG)) {
+        console.error('❌ Invalid coordinates, using NYC defaults');
+        DEFAULT_LAT = 40.7128;
+        DEFAULT_LNG = -74.0060;
+    }
+    
+    // Debug output
+    console.log('=== Dashboard Initialized ===');
+    console.log('Latitude:', DEFAULT_LAT, '(type:', typeof DEFAULT_LAT, ')');
+    console.log('Longitude:', DEFAULT_LNG, '(type:', typeof DEFAULT_LNG, ')');
+    console.log('Valid:', !isNaN(DEFAULT_LAT) && !isNaN(DEFAULT_LNG));
+</script>
+<script src="/js/dashboard.js"></script>
+</body>
+</html>
